@@ -1,0 +1,40 @@
+Topic,Words,Matched_Dimensions,New_Dimension
+0,"lupus, arthritis, rheumatoid, rheumatoid arthritis, rheumatologist, diagnosed, symptoms, ana, joint, pain",,True
+1,"pain, just, feel, day, life, like, pain pain, time, walk, don",,True
+2,"rash, fatigue, symptoms, fog, brain fog, brain, joint, fever, rashes, mouth",nociplastic,False
+3,"joint, joint pain, joints, pain, knees, knee, hands, ve, pain joint, years",,True
+4,"pain, told, arthritis, help, said, lupus, just, symptoms, pains, joint",,True
+5,"chest, chest pain, breath, heart, chest pains, breathing, pain, pains, breathe, deep",,True
+6,"headaches, headache, neck, migraine, migraines, head, day, ve, neck pain, tension",,True
+7,"stomach, abdominal, abdominal pain, stomach pain, nausea, diarrhea, abdomen, gas, bloating, cramps",,True
+8,"meds, tylenol, pain meds, ibuprofen, pain, killers, pain killers, taking, otc, relief",,True
+9,"flare, flares, ups, flare ups, joint, joint pain, pain, iâ, fatigue, bad flare",nociplastic,False
+10,"hand, hands, fingers, wrist, wrists, hand pain, swollen, thumb, feet, ache",,True
+11,"sleep, night, morning, wake, sleeping, pain, lay, sleep pain, woke, night pain",,True
+12,"iâ, iâ pain, pain iâ, iâ ve, itâ, iâ pain iâ, ve, pain, just, pain iâ ve",,True
+13,"joint, joint pain, help, pain, helped, help joint, arthritis, taking, fatigue, symptoms",nociplastic,False
+14,"kidney, kidneys, kidney pain, urine, bladder, protein, pain kidneys, pain, pee, pain kidney",,True
+15,"prednisone, pain, taking, mg, dose, taper, dose prednisone, day, joint pain, joint",,True
+16,"tips, pain management, management, relief, pain relief, help, pain, suggestions, advice, pain tips","biological, management",False
+17,"lower, lower pain, spine, pain, hurts, bad, ve, upper, iâ, bad pain",,True
+18,"plaquenil, taking plaquenil, started plaquenil, taking, iâ, started, ve, 200mg, pain, months",,True
+19,"mouth, tongue, teeth, jaw, painful, dentist, sores, gums, jaw pain, hurts",,True
+20,"feet, foot, toe, toes, foot pain, pain feet, legs, ankles, ankle, big toe",,True
+21,"fatigue, joint, joint pain, pain fatigue, joint pain fatigue, fatigue joint, muscle, pain, fatigue joint pain, joints",nociplastic,False
+22,"eye, eyes, eye pain, right eye, vision, light, pain eyes, pain eye, blurred, right",,True
+23,"fatigue, pain fatigue, exhausted, fatigue pain, work, pain, tired, job, shifts, tired pain",nociplastic,False
+24,"spasms, muscle spasms, muscle, neck, shoulder, shoulders, shoulders neck, legs, arms, neck shoulders",,True
+25,"scalp, hair, hurts, scalp pain, painful, tender, head, touch, ponytail, pain scalp",,True
+26,"tell, pain, hurts, told, hurts gets, iâ, tell iâ, just, sent, trying",,True
+27,"aches, ache, thighs, body, muscle, muscle aches, body aches, tendon, like, legs",,True
+28,"cramps, period, birth control, birth, bleeding, menstrual cramps, menstrual, control, cramping, periods",,True
+29,"dose, taking, stomach, day, took, 5mg, started, iâ, medication, mg",management,False
+30,"cbd, cannabis, marijuana, thc, help, smoke, weed, relief, use, medical",,True
+31,"rib, ribs, cage, rib cage, rib pain, pain rib, left rib, sternum, left, pain ribs",biological,False
+32,"sle, diagnosed sle, diagnosed, ago, years, months, symptoms, hi, hi diagnosed, fatigue",nociplastic,False
+33,"painful, painful just, uncomfortable, painful hurts, pain painful, hurts, painful annoying, necessarily painful, uncomfortable painful, painful uncomfortable",,True
+34,"lymph, nodes, lymph nodes, swollen, node, swollen lymph, lymph node, swollen lymph nodes, lymph nodes neck, neck",,True
+35,"arthritis, arthritis just, arthritis hands, hands, finger, thought, inflammatory arthritis, 16 iâ, middle finger, 16 iâ ve",,True
+36,"itâ, painful itâ, painful, itâ like, ðÿ, pain itâ, ðÿ ðÿ, like, painful itâ like, itâ painful",,True
+37,"shoulder, shoulder pain, arm, left shoulder, pain shoulder, left, left arm, right shoulder, shoulders, pain left",,True
+38,"hip, hip pain, right hip, right, sciatica, pain hip, walk, pain, pain right, born",,True
