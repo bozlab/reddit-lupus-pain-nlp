@@ -1,0 +1,360 @@
+---
+title: "llm_lupus_evaluation_code"
+author: "Drew Walker"
+date: "2025-03-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(irr)
+library(janitor)
+library(table1)
+library(here)
+library(gt)
+library(table1)
+```
+
+
+```{r read-datasets}
+# Drew data cleaning
+raw_annotation_data_dw <- read_csv("drew_formatted_100_llm_lupus_reliability.csv") %>% 
+  clean_names() %>% 
+  rename(accuracy_dw = accuracy,
+         coverage_dw = coverage,
+         hallucination_dw = hallucination,
+         notes_dw = notes) %>% 
+  select(-column_1) %>% 
+  select(id, accuracy_dw, coverage_dw, hallucination_dw, notes_dw)
+
+# Drew data cleaning
+raw_annotation_data_jl <- read_csv("jerik_lupus_biopsychosocial_llm_reliability_sample.csv") %>%
+  clean_names() %>% 
+    rename(accuracy_jl = accuracy,
+         coverage_jl = coverage,
+         hallucination_jl = hallucination,
+         notes_jl = notes) %>% 
+    select(id, accuracy_jl, coverage_jl, hallucination_jl, notes_jl)
+
+
+# User location: 
+# Drew data cleaning
+raw_annotation_data_aa <- read_csv("aishwarya_lupus_biopsychosocial_llm_reliability_sample.csv") %>%
+  clean_names() %>% 
+      rename(accuracy_aa = accuracy,
+         coverage_aa = coverage,
+         hallucination_aa = hallucination,
+         notes_aa = notes) %>% 
+  select(id, accuracy_aa, coverage_aa, hallucination_aa, notes_aa)
+  
+main_set1 <- read_csv("formatted_lupus.csv")
+
+main_set <- main_set1 %>% 
+  filter(Structure == "3: Output is structured perfectly, or with minor errors only") %>% 
+  clean_names() %>% 
+  select(id, instruction, response)
+
+main_set_dw <- left_join(main_set, raw_annotation_data_dw, by = "id")
+main_set_dw_jl <- left_join(main_set_dw, raw_annotation_data_jl, by = "id")
+main_set_all <- left_join(main_set_dw_jl,raw_annotation_data_aa, by = "id")
+
+write_csv(main_set_all, "reliability_posts_dw_aa_jl_combined.csv")
+
+```
+
+# translating dataset
+```{r}
+# Need to combine results across 3 columns each into 4 fitting this pattern-- accuracy_1 , accuracy_2, accuracy_coder_1, accuracy_coder_2 . The three columns to go through are accuracy_dw, accuracy_jl, accuracy_aa. Named by variable_coderinitials. 
+# Go through columns to identify non-na values occucrring in accuracy_dw, accuracy_jl, accuracy_aa. Input first value found in accuracy_1, second non na value in accuracy_2. Input accuracy_coder_1 initials appeneded to end of variable name for the source column used for value accuracy_1 (i.e., if it was from accuracy_dw, put dw, accuracy_jl, put jl.) do the same for accuracy_coder_2. Repeat process for columns coverage_dw, coverage_jl, coverage_aa, and then the last set of columns hallucination_dw, hallucination_jl, hallucination_aa. 
+
+
+
+# Function to merge and track sources for each set of columns
+combine_accuracy <- function(df, col1, col2, col3, prefix) {
+  df %>%
+    rowwise() %>%
+    mutate(
+      values = list(na.omit(c_across(all_of(c(col1, col2, col3))))),
+      initials = list(na.omit(c(col1 = if (!is.na(.data[[col1]])) "dw" else NA,
+                                col2 = if (!is.na(.data[[col2]])) "jl" else NA,
+                                col3 = if (!is.na(.data[[col3]])) "aa" else NA))),
+
+      !!paste0(prefix, "_1") := ifelse(length(values) >= 1, values[[1]], NA),
+      !!paste0(prefix, "_2") := ifelse(length(values) >= 2, values[[2]], NA),
+      !!paste0(prefix, "_coder_1") := ifelse(length(initials) >= 1, initials[[1]], NA),
+      !!paste0(prefix, "_coder_2") := ifelse(length(initials) >= 2, initials[[2]], NA)
+    ) %>%
+    select(-values, -initials) # Drop temporary lists
+}
+
+# Apply the function to each group of columns
+main_set_all <- main_set_all %>%
+  combine_accuracy("accuracy_dw", "accuracy_jl", "accuracy_aa", "accuracy") %>%
+  combine_accuracy("coverage_dw", "coverage_jl", "coverage_aa", "coverage") %>%
+  combine_accuracy("hallucination_dw", "hallucination_jl", "hallucination_aa", "hallucination")
+
+# View cleaned dataset
+head(main_set_all)
+
+
+```
+
+```{r clean-columns}
+# Define function to extract first number and convert to integer
+extract_first_number <- function(column) {
+  as.integer(str_extract(column, "^\\d+")) # Extracts the first number at the start of the string
+}
+
+# Apply to relevant columns
+main_set_all <- main_set_all %>%
+  mutate(across(c(accuracy_1, accuracy_2, coverage_1, coverage_2, hallucination_1, hallucination_2), 
+                ~ extract_first_number(.)))
+```
+# Averages 
+```{r avg}
+# Compute row-wise means for accuracy, coverage, and hallucination
+main_set_all <- main_set_all %>%
+  rowwise() %>%
+  mutate(
+    accuracy_avg = mean(c_across(c(accuracy_1, accuracy_2)), na.rm = TRUE),
+    coverage_avg = mean(c_across(c(coverage_1, coverage_2)), na.rm = TRUE),
+    hallucination_avg = mean(c_across(c(hallucination_1, hallucination_2)), na.rm = TRUE),# Binary, so average still useful
+    accuracy_diff = abs(accuracy_1 - accuracy_2),
+    coverage_diff = abs(coverage_1 - coverage_2),
+    hallucination_diff = abs(hallucination_1 - hallucination_2)
+  ) %>%
+  ungroup()
+
+# Check results
+head(main_set_all)
+table1(~accuracy_avg + coverage_avg + hallucination_avg, data = main_set_all)
+hist(main_set_all$accuracy_avg)
+hist(main_set_all$coverage_avg)
+hist(main_set_all$hallucination_avg)
+hist(main_set_all$accuracy_diff)
+hist(main_set_all$coverage_diff)
+hist(main_set_all$hallucination_diff)
+
+print("accuracy differences")
+
+table(main_set_all$accuracy_diff)
+acc_print = (1-(11/88))
+print(paste("Accuracy was within 1 point", acc_print, "percent of the time"))
+
+print("Coverage differences")
+
+table(main_set_all$coverage_diff)
+cov_print = (1-(7/88))
+print(paste("Coverage was within 1 point", cov_print, "percent of the time"))
+
+print("Hallucination differences")
+
+table(main_set_all$hallucination_diff)
+hall_print = (1-(6/85))
+print(paste("Hallucination was in agreement", hall_print, "percent of the time"))
+
+table1(~accuracy_diff + coverage_diff + hallucination_diff, data = main_set_all)
+```
+```{r correlations-acc-cov}
+# Compute Spearman's correlation for Accuracy
+accuracy_correlation <- cor(main_set_all$accuracy_1, main_set_all$accuracy_2, method = "spearman", use = "complete.obs")
+
+
+# Compute Spearman's correlation for Coverage
+coverage_correlation <- cor(main_set_all$coverage_1, main_set_all$coverage_2, method = "spearman", use = "complete.obs")
+
+# Print results with descriptive messages
+print(paste("Spearman's Correlation for Accuracy Ratings:", round(accuracy_correlation, 3)))
+print(paste("Spearman's Correlation for Coverage Ratings:", round(coverage_correlation, 3)))
+
+```
+
+# Interrater Agreement 
+```{r interrater}
+library(irr)
+library(psych)
+
+# Cohen's Kappa for hallucination (binary)
+hallucination_kappa <- kappa2(main_set_all[, c("hallucination_1", "hallucination_2")])
+
+# Print result
+hallucination_kappa
+
+
+
+```
+## Hallucination agreement
+
+```{r hallucination-agree}
+# Percent agreement for hallucination (binary)
+hallucination_agreement <- mean(main_set_all$hallucination_1 == main_set_all$hallucination_2, na.rm = TRUE) * 100
+hallucination_agreement
+```
+
+
+```{r accuracy-kappa}
+library(psych)
+
+# Weighted Cohen's Kappa for accuracy (ordinal)
+accuracy_kappa <- kappa2(main_set_all[, c("accuracy_1", "accuracy_2")], weight = "squared")
+
+# Weighted Cohen's Kappa for coverage (ordinal)
+coverage_kappa <- kappa2(main_set_all[, c("coverage_1", "coverage_2")], weight = "squared")
+
+# Print results
+accuracy_kappa
+
+
+```
+
+# Accuracy % agreement
+```{r acc-agree}
+# Percent agreement for accuracy (ordinal)
+accuracy_agreement <- mean(main_set_all$accuracy_1 == main_set_all$accuracy_2, na.rm = TRUE) * 100
+accuracy_agreement
+table(main_set_all$accuracy_1, main_set_all$accuracy_2)
+table(main_set_all$hallucination_1, main_set_all$hallucination_2)
+
+```
+
+# Coverage 
+
+## Coverage Agreement
+```{r cov-agree}
+# Percent agreement for coverage (ordinal)
+coverage_agreement <- mean(main_set_all$coverage_1 == main_set_all$coverage_2, na.rm = TRUE) * 100
+coverage_agreement
+```
+## Coverage Kappa
+
+```{r coverage-kappa}
+coverage_kappa
+```
+```{r coverage-kappa}
+coverage_kappa
+table(main_set_all$coverage_1, main_set_all$coverage_2)
+
+```
+
+
+```{r coder-pairs}
+library(irr)
+
+# Define coder pairs for ordinal data (accuracy & coverage)
+coder_pairs_ordinal <- list(
+  dw_jl = list(accuracy = c("accuracy_dw", "accuracy_jl"), coverage = c("coverage_dw", "coverage_jl")),
+  dw_aa = list(accuracy = c("accuracy_dw", "accuracy_aa"), coverage = c("coverage_dw", "coverage_aa")),
+  jl_aa = list(accuracy = c("accuracy_jl", "accuracy_aa"), coverage = c("coverage_jl", "coverage_aa"))
+)
+
+```
+
+```{r ordinal-data}
+# Function to compute weighted Cohen’s Kappa
+compute_weighted_kappa <- function(df, pair) {
+  kappa2(df[, pair], weight = "squared")  # Quadratic weights for ordinal data
+}
+
+# Compute Kappa for accuracy & coverage for each coder pair
+kappa_results_ordinal <- lapply(coder_pairs_ordinal, function(pair) {
+  list(
+    accuracy_kappa = compute_weighted_kappa(main_set_all, pair$accuracy),
+    coverage_kappa = compute_weighted_kappa(main_set_all, pair$coverage)
+  )
+})
+
+# Print results
+kappa_results_ordinal
+
+
+```
+
+```{r hallucination-pairs}
+# Define coder pairs for hallucination ratings
+coder_pairs_hallucination <- list(
+  dw_jl = c("hallucination_dw", "hallucination_jl"),
+  dw_aa = c("hallucination_dw", "hallucination_aa"),
+  jl_aa = c("hallucination_jl", "hallucination_aa")
+)
+
+# Compute Kappa for binary hallucination
+kappa_results_hallucination <- lapply(coder_pairs_hallucination, function(pair) {
+  kappa2(main_set_all[, pair])  # Unweighted for binary ratings
+})
+
+# Print results
+kappa_results_hallucination
+
+```
+
+```{r agreement-pairs-1}
+# Function to compute percent agreement
+compute_percent_agreement <- function(df, pair) {
+  mean(df[[pair[1]]] == df[[pair[2]]], na.rm = TRUE) * 100
+}
+
+# Compute percent agreement for ordinal data (accuracy & coverage)
+percent_agreement_ordinal <- lapply(coder_pairs_ordinal, function(pair) {
+  list(
+    accuracy_agreement = compute_percent_agreement(main_set_all, pair$accuracy),
+    coverage_agreement = compute_percent_agreement(main_set_all, pair$coverage)
+  )
+})
+
+# Compute percent agreement for hallucination (binary)
+percent_agreement_hallucination <- lapply(coder_pairs_hallucination, function(pair) compute_percent_agreement(main_set_all, pair))
+
+# Print results
+percent_agreement_ordinal
+percent_agreement_hallucination
+
+```
+
+
+```{r agreement-pairs-hallucination}
+percent_agreement_hallucination
+
+
+```
+# Krippendorff's alphas
+
+```{r krippendorff}
+# Compute Krippendorff’s Alpha for accuracy (ordinal)
+accuracy_alpha <- kripp.alpha(as.matrix(main_set_all[, c("accuracy_1", "accuracy_2")]), method = "ordinal")
+
+# Compute Krippendorff’s Alpha for coverage (ordinal)
+coverage_alpha <- kripp.alpha(as.matrix(main_set_all[, c("coverage_1", "coverage_2")]), method = "ordinal")
+
+# Compute Krippendorff’s Alpha for hallucination (nominal/binary)
+hallucination_alpha <- kripp.alpha(as.matrix(main_set_all[, c("hallucination_1", "hallucination_2")]), method = "nominal")
+
+# Print results
+accuracy_alpha
+coverage_alpha
+hallucination_alpha
+
+
+```
+```{r csv-of-close-ones}
+# Filter the dataset
+filtered_df <- main_set_all %>%
+  filter(
+    accuracy_1 >= 3 & accuracy_2 >= 3,
+    coverage_1 >= 3 & coverage_2 >= 3,
+    hallucination_1 == 0 & hallucination_2 == 0
+  )
+
+# Save to CSV
+write_csv(filtered_df, "filtered_ratings.csv")
+
+print(paste("Filtered dataset contains", nrow(filtered_df), "rows"))
+
+
+# Print message
+print("Filtered dataset saved as 'filtered_ratings.csv'")
+
+table()
+
+```
+
